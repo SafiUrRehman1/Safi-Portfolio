@@ -12,3 +12,26 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 define( 'PORTFOLIO_CONTENT_PATH', plugin_dir_path( __FILE__ ) );
 define( 'PORTFOLIO_CONTENT_URL', plugin_dir_url( __FILE__ ) );
+
+require_once PORTFOLIO_CONTENT_PATH . 'includes/class-cpt-project.php';
+require_once PORTFOLIO_CONTENT_PATH . 'includes/class-taxonomy-project-category.php';
+require_once PORTFOLIO_CONTENT_PATH . 'includes/class-taxonomy-technology.php';
+require_once PORTFOLIO_CONTENT_PATH . 'includes/class-project-meta.php';
+
+Portfolio_CPT_Project::init();
+Portfolio_Taxonomy_Project_Category::init();
+Portfolio_Taxonomy_Technology::init();
+Portfolio_Project_Meta::init();
+
+register_activation_hook( __FILE__, 'portfolio_content_activate' );
+function portfolio_content_activate() {
+	Portfolio_CPT_Project::register();
+	Portfolio_Taxonomy_Project_Category::register();
+	Portfolio_Taxonomy_Technology::register();
+	flush_rewrite_rules();
+}
+
+register_deactivation_hook( __FILE__, 'portfolio_content_deactivate' );
+function portfolio_content_deactivate() {
+	flush_rewrite_rules();
+}

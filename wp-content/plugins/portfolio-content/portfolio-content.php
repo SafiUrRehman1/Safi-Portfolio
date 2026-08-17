@@ -17,11 +17,13 @@ require_once PORTFOLIO_CONTENT_PATH . 'includes/class-cpt-project.php';
 require_once PORTFOLIO_CONTENT_PATH . 'includes/class-taxonomy-project-category.php';
 require_once PORTFOLIO_CONTENT_PATH . 'includes/class-taxonomy-technology.php';
 require_once PORTFOLIO_CONTENT_PATH . 'includes/class-project-meta.php';
+require_once PORTFOLIO_CONTENT_PATH . 'includes/class-rest-graph.php';
 
 Portfolio_CPT_Project::init();
 Portfolio_Taxonomy_Project_Category::init();
 Portfolio_Taxonomy_Technology::init();
 Portfolio_Project_Meta::init();
+Portfolio_REST_Graph::init();
 
 register_activation_hook( __FILE__, 'portfolio_content_activate' );
 function portfolio_content_activate() {

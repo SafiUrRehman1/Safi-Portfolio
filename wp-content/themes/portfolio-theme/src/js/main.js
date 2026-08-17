@@ -3,6 +3,8 @@
 // template-parts/nav.php + tailwind.css. This just adds accessible extras:
 // aria-expanded state, Escape-to-close, and click-outside-to-close.
 
+import { initProjectsShowcase } from './projects-showcase/index.js';
+
 function initNav() {
 	const toggle = document.getElementById( 'nav-toggle' );
 	const label = document.querySelector( '.nav-toggle-label' );
@@ -34,8 +36,18 @@ function initNav() {
 	} );
 }
 
-if ( document.readyState === 'loading' ) {
-	document.addEventListener( 'DOMContentLoaded', initNav );
-} else {
+function boot() {
 	initNav();
+
+	try {
+		initProjectsShowcase();
+	} catch ( error ) {
+		console.warn( 'Projects showcase: failed to initialize, falls back to static scroll.', error );
+	}
+}
+
+if ( document.readyState === 'loading' ) {
+	document.addEventListener( 'DOMContentLoaded', boot );
+} else {
+	boot();
 }

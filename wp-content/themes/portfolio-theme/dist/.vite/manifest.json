@@ -1,11 +1,23 @@
 {
   "src/css/tailwind.css": {
-    "file": "assets/css-mRltfx0T.css",
+    "file": "assets/css-DnvI3E8n.css",
     "src": "src/css/tailwind.css",
     "isEntry": true
   },
+  "src/fonts/inter-variable.woff2": {
+    "file": "assets/inter-variable-Dx4kXJAl.woff2",
+    "src": "src/fonts/inter-variable.woff2"
+  },
+  "src/fonts/jetbrains-mono-variable.woff2": {
+    "file": "assets/jetbrains-mono-variable-6fWv1k7M.woff2",
+    "src": "src/fonts/jetbrains-mono-variable.woff2"
+  },
+  "src/fonts/space-grotesk-variable.woff2": {
+    "file": "assets/space-grotesk-variable-BhU9QXUp.woff2",
+    "src": "src/fonts/space-grotesk-variable.woff2"
+  },
   "src/js/main.js": {
-    "file": "assets/main-BYQrRYhT.js",
+    "file": "assets/main-B-4H4LUB.js",
     "name": "main",
     "src": "src/js/main.js",
     "isEntry": true

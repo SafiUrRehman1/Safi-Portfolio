@@ -26,6 +26,28 @@ function portfolio_theme_setup() {
 add_action( 'after_setup_theme', 'portfolio_theme_setup' );
 
 /**
+ * The Projects archive is presented as one continuous scroll-driven
+ * showcase, not a paginated grid, so every published project needs to be
+ * on a single page. This is a presentation-layer query change only — it
+ * does not touch the CPT registration, taxonomies, or meta in the
+ * portfolio-content plugin.
+ */
+function portfolio_theme_project_archive_query( $query ) {
+	if ( is_admin() || ! $query->is_main_query() ) {
+		return;
+	}
+
+	if ( ! $query->is_post_type_archive( 'project' ) ) {
+		return;
+	}
+
+	$query->set( 'posts_per_page', -1 );
+	$query->set( 'orderby', 'menu_order' );
+	$query->set( 'order', 'ASC' );
+}
+add_action( 'pre_get_posts', 'portfolio_theme_project_archive_query' );
+
+/**
  * Minimal fallback menu so navigation still works before a menu is assigned
  * in Appearance > Menus.
  */

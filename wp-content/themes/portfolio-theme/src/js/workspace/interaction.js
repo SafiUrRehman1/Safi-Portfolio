@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { LAMP_STATES } from './scene.js';
+import { playNavigateSound, playLampSound } from './sound.js';
 
 // Small, restrained magnitudes throughout — this is meant to read as "the
 // scene subtly responds to you," never as a game/UI widget. Monitor gets a
@@ -165,6 +166,7 @@ export class WorkspaceInteraction {
 
 		if ( hitId === 'lamp' ) {
 			this.lampOn = ! this.lampOn;
+			playLampSound( this.lampOn );
 			if ( this.reducedMotion ) {
 				this.lampTransition = this.lampOn ? 1 : 0;
 				this._applyLampState();
@@ -185,6 +187,8 @@ export class WorkspaceInteraction {
 	 * needed). Reduced motion skips straight to navigation, unchanged from
 	 * the previous instant-navigate behavior. */
 	_startPageTransition( hitId, destination ) {
+		playNavigateSound();
+
 		if ( this.reducedMotion ) {
 			window.location.href = destination;
 			return;

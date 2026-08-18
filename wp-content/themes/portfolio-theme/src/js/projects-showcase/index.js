@@ -1,5 +1,6 @@
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { playSwipeSound } from './sound.js';
 
 // Scroll distance per project-to-project transition, as a fraction of one
 // viewport height. Short enough that a normal scroll gesture covers it —
@@ -75,7 +76,11 @@ class ProjectShowcaseController {
 			pin: this.viewport,
 			start: 'top top',
 			end: () => '+=' + window.innerHeight * TRANSITION_VH * ( this.total - 1 ),
-			scrub: 0.35,
+			// Lower scrub = less catch-up delay between the actual scroll
+			// position and the visual — the previous 0.35 read as laggy;
+			// this stays smoothed (not a raw 1:1 jump) but tracks input
+			// much more directly.
+			scrub: 0.15,
 			snap: {
 				snapTo: 1 / ( this.total - 1 ),
 				duration: { min: 0.25, max: 0.6 },
@@ -134,6 +139,7 @@ class ProjectShowcaseController {
 
 		const dominant = localT > 0.5 ? upper : lower;
 		if ( dominant !== this.currentDominant ) {
+			playSwipeSound();
 			this.setDominant( dominant );
 		}
 	}

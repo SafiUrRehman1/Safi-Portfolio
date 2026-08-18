@@ -519,8 +519,11 @@ export function frameCamera( camera, box, aspect ) {
 	const depth = THREE.MathUtils.lerp( 1.0, 0.78, t );
 	// Portrait/mobile intentionally frames tighter (smaller margin = camera
 	// closer) so the workspace feels like the camera moved in close, rather
-	// than the same shot simply pulled back into a taller canvas.
-	const margin = THREE.MathUtils.lerp( 0.87, 0.7, t );
+	// than the same shot simply pulled back into a taller canvas. Desktop's
+	// end of this range is pulled in further still so the desk reads as a
+	// deliberate hero composition rather than a distant object — mobile's
+	// end (0.7) is untouched.
+	const margin = THREE.MathUtils.lerp( 0.76, 0.7, t );
 	const viewDirection = new THREE.Vector3( 0, elevation, depth ).normalize();
 
 	const vFov = THREE.MathUtils.degToRad( camera.fov );

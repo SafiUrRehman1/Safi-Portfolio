@@ -26,6 +26,56 @@ function portfolio_theme_setup() {
 add_action( 'after_setup_theme', 'portfolio_theme_setup' );
 
 /**
+ * WordPress only marks a menu item "current" on an exact URL match, so the
+ * Projects nav link doesn't light up while viewing an individual project
+ * (a different URL under the same section). Extends that highlighting to
+ * cover single project pages too.
+ */
+function portfolio_theme_nav_current_class( $classes, $item ) {
+	if ( is_singular( 'project' ) && $item->url === get_post_type_archive_link( 'project' ) ) {
+		$classes[] = 'current-menu-item';
+	}
+
+	return $classes;
+}
+add_filter( 'nav_menu_css_class', 'portfolio_theme_nav_current_class', 10, 2 );
+
+/**
+ * Favicon (a plain SVG matching the header logo's own accent-dot mark —
+ * not a separate visual identity) plus a meta description/Open Graph tag
+ * for link previews. No SEO plugin — this is the entire, minimal set of
+ * head tags a portfolio meant to be shared needs, using only real content
+ * already on each page (never invented copy).
+ */
+function portfolio_theme_head_extras() {
+	echo '<link rel="icon" type="image/svg+xml" href="' . esc_url( get_template_directory_uri() . '/favicon.svg' ) . '" />' . "\n";
+
+	if ( is_page_template( 'template-about.php' ) ) {
+		$description = __( "I'm Safi, a software developer focused on building practical, reliable software and thoughtful digital experiences.", 'portfolio-theme' );
+	} elseif ( is_page_template( 'template-contact.php' ) ) {
+		$description = __( 'Open to conversations about projects, collaboration, development opportunities, and interesting ideas.', 'portfolio-theme' );
+	} elseif ( is_post_type_archive( 'project' ) ) {
+		$description = __( 'A selection of software projects spanning web apps, APIs, and full-stack systems.', 'portfolio-theme' );
+	} elseif ( is_singular( 'project' ) ) {
+		$description = has_excerpt() ? get_the_excerpt() : wp_trim_words( wp_strip_all_tags( get_the_content() ), 30 );
+	} else {
+		$description = get_bloginfo( 'description' );
+	}
+
+	$description = trim( wp_strip_all_tags( $description ) );
+	if ( ! $description ) {
+		return;
+	}
+
+	echo '<meta name="description" content="' . esc_attr( $description ) . '" />' . "\n";
+	echo '<meta property="og:type" content="website" />' . "\n";
+	echo '<meta property="og:title" content="' . esc_attr( wp_get_document_title() ) . '" />' . "\n";
+	echo '<meta property="og:description" content="' . esc_attr( $description ) . '" />' . "\n";
+	echo '<meta property="og:url" content="' . esc_url( is_front_page() ? home_url( '/' ) : get_permalink() ) . '" />' . "\n";
+}
+add_action( 'wp_head', 'portfolio_theme_head_extras', 1 );
+
+/**
  * The Projects archive is presented as one continuous scroll-driven
  * showcase, not a paginated grid, so every published project needs to be
  * on a single page. This is a presentation-layer query change only — it

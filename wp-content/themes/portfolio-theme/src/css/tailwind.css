@@ -281,6 +281,28 @@
 		color: var(--color-text);
 	}
 
+	/* Which page you're currently on — WordPress adds these classes to
+	   wp_nav_menu() output automatically, no menu-item edits needed. A
+	   thin underline (the same restrained line motif used elsewhere —
+	   the About closing CTA, the workspace fallback links) rather than a
+	   new visual treatment. */
+	.site-nav__list .current-menu-item > a,
+	.site-nav__list .current_page_item > a {
+		color: var(--color-text);
+		position: relative;
+	}
+
+	.site-nav__list .current-menu-item > a::after,
+	.site-nav__list .current_page_item > a::after {
+		content: "";
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: -0.35rem;
+		height: 1px;
+		background: var(--color-accent);
+	}
+
 	.site-nav {
 		display: none;
 		width: 100%;
@@ -557,6 +579,14 @@
 		padding: 0.25rem 0.75rem;
 	}
 
+	.archive-header {
+		padding-block: 3rem 2rem;
+	}
+
+	.archive-header__title {
+		font-size: clamp(2rem, 5vw, 3.25rem);
+	}
+
 	/* Project Showcase — continuous scroll-driven scene transitions on the
 	   Projects archive (desktop only). By default (mobile / reduced-motion /
 	   no-JS / JS-init-failure) scenes are plain stacked full sections —
@@ -769,6 +799,11 @@
 	/* Single project */
 	.single-project__header {
 		padding-block: 3rem 2rem;
+	}
+
+	.single-project__title {
+		font-size: clamp(1.75rem, 4.5vw, 2.75rem);
+		max-width: 30ch;
 	}
 
 	.single-project__featured-image img {

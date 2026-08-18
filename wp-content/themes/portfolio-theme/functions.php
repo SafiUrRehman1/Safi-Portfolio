@@ -73,16 +73,93 @@ function portfolio_theme_get_page_url_by_template( $template_file ) {
 }
 
 /**
- * A GitHub profile URL and a resume link are personal, editable settings,
- * not content the Projects/taxonomy architecture owns — the Customizer is
- * the right home for them (plain text/URL fields, no plugin change needed).
+ * Finds a published project by exact title — used by the About page's
+ * Experience section to link internship projects to their portfolio pages
+ * where one exists, without hardcoding IDs/slugs or inventing a link when
+ * no matching project has been added yet.
+ */
+function portfolio_theme_find_project_by_title( $title ) {
+	$posts = get_posts(
+		array(
+			'post_type'      => 'project',
+			'post_status'    => 'publish',
+			'posts_per_page' => 1,
+			'title'          => $title,
+			'fields'         => 'ids',
+		)
+	);
+
+	return empty( $posts ) ? 0 : $posts[0];
+}
+
+/**
+ * A GitHub profile URL, resume link, contact email, LinkedIn URL, and an
+ * optional certificate link are personal, editable settings, not content
+ * the Projects/taxonomy architecture owns — the Customizer is the right
+ * home for them (plain text/URL fields, no plugin change needed, no ACF).
  */
 function portfolio_theme_customize_register( $wp_customize ) {
 	$wp_customize->add_section(
 		'portfolio_theme_links',
 		array(
-			'title'    => __( 'Site Links', 'portfolio-theme' ),
+			'title'    => __( 'Contact & Links', 'portfolio-theme' ),
 			'priority' => 160,
+		)
+	);
+
+	$wp_customize->add_setting(
+		'portfolio_email',
+		array(
+			'type'              => 'theme_mod',
+			'default'           => '',
+			'sanitize_callback' => 'sanitize_email',
+			'transport'         => 'refresh',
+		)
+	);
+	$wp_customize->add_control(
+		'portfolio_email',
+		array(
+			'section'     => 'portfolio_theme_links',
+			'label'       => __( 'Contact email', 'portfolio-theme' ),
+			'type'        => 'email',
+			'description' => __( 'Shown on the Contact page. Falls back to the site admin email if left blank.', 'portfolio-theme' ),
+		)
+	);
+
+	$wp_customize->add_setting(
+		'portfolio_linkedin_url',
+		array(
+			'type'              => 'theme_mod',
+			'default'           => '',
+			'sanitize_callback' => 'esc_url_raw',
+			'transport'         => 'refresh',
+		)
+	);
+	$wp_customize->add_control(
+		'portfolio_linkedin_url',
+		array(
+			'section' => 'portfolio_theme_links',
+			'label'   => __( 'LinkedIn URL', 'portfolio-theme' ),
+			'type'    => 'url',
+		)
+	);
+
+	$wp_customize->add_setting(
+		'portfolio_certificate_url',
+		array(
+			'type'              => 'theme_mod',
+			'default'           => '',
+			'sanitize_callback' => 'esc_url_raw',
+			'transport'         => 'refresh',
+		)
+	);
+	$wp_customize->add_control(
+		'portfolio_certificate_url',
+		array(
+			'section'     => 'portfolio_theme_links',
+			'label'       => __( 'CodeAlpha certificate URL', 'portfolio-theme' ),
+			'type'        => 'url',
+			'description' => __( 'Optional. Link to a hosted certificate (e.g. a media library file). Leave blank to hide the "View certificate" link on About.', 'portfolio-theme' ),
 		)
 	);
 

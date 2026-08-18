@@ -17,6 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 get_header();
+get_template_part( 'template-parts/back-to-workspace' );
 ?>
 <main id="main-content">
 	<header class="archive-header">

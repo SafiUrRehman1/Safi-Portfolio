@@ -156,6 +156,20 @@
 		}
 	}
 
+	/* About/Contact are a sequence of short, compact editorial blocks —
+	   the full marketing-page rhythm above (9rem/side) reads as empty
+	   scrolling between them rather than spacious. A tighter, still-generous
+	   rhythm keeps them calm without feeling sparse. */
+	.section--editorial {
+		padding-block: 3rem;
+	}
+
+	@media (min-width: 768px) {
+		.section--editorial {
+			padding-block: 4.5rem;
+		}
+	}
+
 	.section__heading {
 		font-size: 1.75rem;
 		margin-bottom: 2.5rem;
@@ -909,5 +923,426 @@
 		flex-wrap: wrap;
 		justify-content: space-between;
 		gap: 1rem;
+	}
+
+	/* Shared editorial vocabulary — About/Contact reuse this rather than
+	   inventing page-specific heading treatments. Matches the mono/uppercase/
+	   accent eyebrow already established on the homepage and Projects. */
+	.eyebrow {
+		font-family: var(--font-mono);
+		color: var(--color-accent);
+		font-size: 0.8125rem;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		margin-bottom: 1rem;
+	}
+
+	/* Reveal-on-scroll — one mechanism (src/js/reveal.js), reused by every
+	   block below via [data-reveal]. Reduced motion (JS + the global base-
+	   layer rule) collapses this to an instant, motionless appearance. */
+	[data-reveal] {
+		opacity: 0;
+		transform: translateY(18px);
+		transition: opacity 0.65s ease, transform 0.65s ease;
+	}
+
+	[data-reveal].is-revealed {
+		opacity: 1;
+		transform: translateY(0);
+	}
+
+	[data-reveal-delay="1"] {
+		transition-delay: 0.08s;
+	}
+
+	[data-reveal-delay="2"] {
+		transition-delay: 0.16s;
+	}
+
+	/* Back to Workspace — a slim strip directly under the persistent header,
+	   present on About/Contact/Projects/Single Project only (never on the
+	   homepage, which IS the workspace). Reads as navigation chrome, not
+	   page content — same mono rhythm as the header/footer. */
+	.back-to-workspace {
+		border-bottom: 1px solid var(--color-border);
+	}
+
+	.back-to-workspace__link {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding-block: 0.875rem;
+		font-family: var(--font-mono);
+		font-size: 0.8125rem;
+		letter-spacing: 0.04em;
+		color: var(--color-text-secondary);
+		text-decoration: none;
+	}
+
+	.back-to-workspace__arrow {
+		display: inline-block;
+		transition: transform 0.2s ease;
+	}
+
+	@media (hover: hover) {
+		.back-to-workspace__link:hover {
+			color: var(--color-text);
+		}
+
+		.back-to-workspace__link:hover .back-to-workspace__arrow {
+			transform: translateX(-3px);
+		}
+	}
+
+	/* About — hero/introduction */
+	.about-hero__title {
+		font-size: clamp(2rem, 5vw, 3.25rem);
+		max-width: 18ch;
+		margin-bottom: 1.75rem;
+	}
+
+	.about-hero__intro {
+		font-size: clamp(1.0625rem, 2vw, 1.25rem);
+		max-width: 52ch;
+		margin-bottom: 1rem;
+	}
+
+	.about-hero__body {
+		color: var(--color-text-secondary);
+		max-width: 58ch;
+	}
+
+	/* About — currently building. Desktop: statement and supporting list
+	   side by side. Mobile: not just a shrunk two-column grid — the
+	   statement drops to a large-but-reasonable size and the list becomes a
+	   clearly separate block beneath it with its own breathing room. */
+	.about-direction__grid {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 2rem;
+	}
+
+	.about-direction__statement {
+		font-family: var(--font-display);
+		font-size: clamp(2rem, 6vw, 3.5rem);
+		font-weight: 600;
+		letter-spacing: -0.02em;
+		line-height: 1.05;
+	}
+
+	.about-direction__support p {
+		color: var(--color-text-secondary);
+		margin-bottom: 1rem;
+	}
+
+	.about-direction__list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		font-family: var(--font-mono);
+		font-size: 0.9375rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.625rem;
+	}
+
+	.about-direction__list li {
+		padding-left: 1.25rem;
+		position: relative;
+	}
+
+	.about-direction__list li::before {
+		content: "";
+		position: absolute;
+		left: 0;
+		top: 0.55em;
+		width: 6px;
+		height: 1px;
+		background: var(--color-accent);
+	}
+
+	@media (min-width: 900px) {
+		.about-direction__grid {
+			grid-template-columns: 1.2fr 0.8fr;
+			align-items: center;
+			gap: 4rem;
+		}
+	}
+
+	/* About — technical skills. Mobile: a single stacked list with row
+	   dividers (comfortable to read top-to-bottom, not squeezed cards).
+	   Desktop: a quiet grid; a group only shifts its label to the accent
+	   color on hover — never a glowing/elevated card. */
+	.about-skills__grid {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.about-skills__group {
+		padding-block: 1.25rem;
+		border-top: 1px solid var(--color-border);
+		transition: border-color 0.25s ease;
+	}
+
+	.about-skills__group:last-child {
+		border-bottom: 1px solid var(--color-border);
+	}
+
+	.about-skills__label {
+		font-family: var(--font-mono);
+		font-size: 0.75rem;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--color-text-secondary);
+		margin-bottom: 0.375rem;
+		transition: color 0.25s ease;
+	}
+
+	.about-skills__value {
+		font-size: 1.0625rem;
+	}
+
+	@media (hover: hover) {
+		.about-skills__group:hover .about-skills__label {
+			color: var(--color-accent);
+		}
+	}
+
+	@media (min-width: 768px) {
+		.about-skills__grid {
+			display: grid;
+			grid-template-columns: repeat(3, 1fr);
+			gap: 0;
+		}
+
+		.about-skills__group {
+			padding: 1.5rem;
+			border: 1px solid var(--color-border);
+			margin: -1px 0 0 -1px;
+		}
+	}
+
+	/* About — education / experience: a restrained editorial entry, not a
+	   dashboard timeline with icons/dots/progress bars. */
+	.about-entry__title {
+		font-size: clamp(1.25rem, 2.5vw, 1.5rem);
+		margin-bottom: 0.25rem;
+	}
+
+	.about-entry__subtitle {
+		color: var(--color-text-secondary);
+		margin-bottom: 0.5rem;
+	}
+
+	.about-entry__meta {
+		font-family: var(--font-mono);
+		font-size: 0.8125rem;
+		color: var(--color-text-secondary);
+	}
+
+	.about-experience__projects {
+		list-style: none;
+		margin: 1.25rem 0 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.about-experience__projects li {
+		font-size: 1rem;
+	}
+
+	.about-experience__projects a {
+		text-decoration: underline;
+		text-underline-offset: 0.2em;
+		color: var(--color-text);
+	}
+
+	@media (hover: hover) {
+		.about-experience__projects a:hover {
+			color: var(--color-accent);
+		}
+	}
+
+	.about-entry__certificate {
+		display: inline-block;
+		margin-top: 1.25rem;
+		font-family: var(--font-mono);
+		font-size: 0.8125rem;
+		color: var(--color-text-secondary);
+		text-decoration: underline;
+		text-underline-offset: 0.25em;
+	}
+
+	@media (hover: hover) {
+		.about-entry__certificate:hover {
+			color: var(--color-accent);
+		}
+	}
+
+	/* About — how I work: a short, quiet list of principles, not icon
+	   cards. A thin accent rule marks each line rather than a bullet glyph. */
+	.about-principles__list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		max-width: 60ch;
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.about-principles__list li {
+		padding-left: 1.5rem;
+		position: relative;
+		font-size: 1.0625rem;
+	}
+
+	.about-principles__list li::before {
+		content: "";
+		position: absolute;
+		left: 0;
+		top: 0.6em;
+		width: 10px;
+		height: 1px;
+		background: var(--color-accent);
+	}
+
+	/* About — closing */
+	.about-closing__title {
+		font-size: clamp(1.5rem, 3.5vw, 2.25rem);
+		max-width: 20ch;
+		margin-bottom: 1.5rem;
+	}
+
+	.about-closing__cta {
+		display: inline-flex;
+		font-family: var(--font-mono);
+		font-size: 1rem;
+		text-decoration: none;
+		color: var(--color-accent);
+		border-bottom: 1px solid var(--color-accent-dim);
+		padding-bottom: 0.25rem;
+		transition: border-color 0.2s ease;
+	}
+
+	@media (hover: hover) {
+		.about-closing__cta:hover {
+			border-color: var(--color-accent);
+		}
+	}
+
+	/* Contact — deliberately more minimal than About */
+	.contact-hero__title {
+		font-size: clamp(2.25rem, 6vw, 3.75rem);
+		max-width: 16ch;
+		margin-bottom: 1.5rem;
+	}
+
+	.contact-hero__support {
+		color: var(--color-text-secondary);
+		font-size: clamp(1.0625rem, 2vw, 1.1875rem);
+		max-width: 52ch;
+	}
+
+	.contact-email {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 1.25rem;
+	}
+
+	.contact-email__address {
+		font-family: var(--font-display);
+		font-size: clamp(1.5rem, 5vw, 2.75rem);
+		font-weight: 600;
+		letter-spacing: -0.01em;
+		text-decoration: none;
+		word-break: break-word;
+	}
+
+	@media (hover: hover) {
+		.contact-email__address:hover {
+			color: var(--color-accent);
+		}
+	}
+
+	.contact-email__copy {
+		font-family: var(--font-mono);
+		font-size: 0.8125rem;
+		letter-spacing: 0.04em;
+		color: var(--color-text-secondary);
+		background: transparent;
+		border: 1px solid var(--color-border);
+		border-radius: 999px;
+		padding: 0.5rem 1rem;
+		cursor: pointer;
+		transition: border-color 0.2s ease, color 0.2s ease;
+	}
+
+	.contact-email__copy:hover,
+	.contact-email__copy:focus-visible {
+		border-color: var(--color-accent-dim);
+		color: var(--color-text);
+	}
+
+	.contact-email__copy.is-copied {
+		border-color: var(--color-accent);
+		color: var(--color-accent);
+	}
+
+	.contact-links__list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 1.5rem 2rem;
+	}
+
+	.contact-links__list a {
+		font-family: var(--font-mono);
+		font-size: 0.9375rem;
+		text-decoration: underline;
+		text-underline-offset: 0.25em;
+		color: var(--color-text-secondary);
+	}
+
+	@media (hover: hover) {
+		.contact-links__list a:hover {
+			color: var(--color-accent);
+		}
+	}
+
+	/* Contact — minimal closing visual: a small illuminated caret, not a
+	   second 3D scene. Blinks gently like a terminal cursor; reduced motion
+	   (global base-layer rule) collapses the animation to a static glow. */
+	.contact-closing {
+		display: flex;
+		justify-content: center;
+		padding-block: 3rem 5rem;
+	}
+
+	.contact-closing__caret {
+		font-family: var(--font-mono);
+		font-size: 1.5rem;
+		color: var(--color-accent);
+		text-shadow: 0 0 12px color-mix(in srgb, var(--color-accent) 65%, transparent);
+		animation: contact-caret-blink 1.4s step-end infinite;
+	}
+
+	@keyframes contact-caret-blink {
+		0%,
+		45% {
+			opacity: 1;
+		}
+		50%,
+		95% {
+			opacity: 0.15;
+		}
+		100% {
+			opacity: 1;
+		}
 	}
 }

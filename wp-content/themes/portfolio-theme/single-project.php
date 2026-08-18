@@ -4,6 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 get_header();
+get_template_part( 'template-parts/back-to-workspace' );
 
 while ( have_posts() ) :
 	the_post();

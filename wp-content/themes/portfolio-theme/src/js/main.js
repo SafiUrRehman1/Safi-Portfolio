@@ -3,6 +3,7 @@
 // template-parts/nav.php + tailwind.css. This just adds accessible extras:
 // aria-expanded state, Escape-to-close, and click-outside-to-close.
 
+import { initWorkspaceScene } from './workspace/index.js';
 import { initProjectsShowcase } from './projects-showcase/index.js';
 
 function initNav() {
@@ -38,6 +39,12 @@ function initNav() {
 
 function boot() {
 	initNav();
+
+	try {
+		initWorkspaceScene();
+	} catch ( error ) {
+		console.warn( 'Workspace scene: failed to initialize, falls back to text.', error );
+	}
 
 	try {
 		initProjectsShowcase();

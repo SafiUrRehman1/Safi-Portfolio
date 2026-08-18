@@ -48,6 +48,85 @@ function portfolio_theme_project_archive_query( $query ) {
 add_action( 'pre_get_posts', 'portfolio_theme_project_archive_query' );
 
 /**
+ * Finds the permalink of the published page assigned a given page template,
+ * rather than assuming a hardcoded slug (e.g. "/about/") — the site owner
+ * can rename a page's slug at any time without breaking whatever links to it
+ * by template instead.
+ */
+function portfolio_theme_get_page_url_by_template( $template_file ) {
+	$pages = get_posts(
+		array(
+			'post_type'      => 'page',
+			'post_status'    => 'publish',
+			'posts_per_page' => 1,
+			'meta_key'       => '_wp_page_template',
+			'meta_value'     => $template_file,
+			'fields'         => 'ids',
+		)
+	);
+
+	if ( empty( $pages ) ) {
+		return '';
+	}
+
+	return get_permalink( $pages[0] );
+}
+
+/**
+ * A GitHub profile URL and a resume link are personal, editable settings,
+ * not content the Projects/taxonomy architecture owns — the Customizer is
+ * the right home for them (plain text/URL fields, no plugin change needed).
+ */
+function portfolio_theme_customize_register( $wp_customize ) {
+	$wp_customize->add_section(
+		'portfolio_theme_links',
+		array(
+			'title'    => __( 'Site Links', 'portfolio-theme' ),
+			'priority' => 160,
+		)
+	);
+
+	$wp_customize->add_setting(
+		'portfolio_github_url',
+		array(
+			'type'              => 'theme_mod',
+			'default'           => '',
+			'sanitize_callback' => 'esc_url_raw',
+			'transport'         => 'refresh',
+		)
+	);
+	$wp_customize->add_control(
+		'portfolio_github_url',
+		array(
+			'section'     => 'portfolio_theme_links',
+			'label'       => __( 'GitHub URL', 'portfolio-theme' ),
+			'type'        => 'url',
+			'description' => __( 'Used by the homepage workspace scene\'s terminal object.', 'portfolio-theme' ),
+		)
+	);
+
+	$wp_customize->add_setting(
+		'portfolio_resume_url',
+		array(
+			'type'              => 'theme_mod',
+			'default'           => '',
+			'sanitize_callback' => 'esc_url_raw',
+			'transport'         => 'refresh',
+		)
+	);
+	$wp_customize->add_control(
+		'portfolio_resume_url',
+		array(
+			'section'     => 'portfolio_theme_links',
+			'label'       => __( 'Resume URL', 'portfolio-theme' ),
+			'type'        => 'url',
+			'description' => __( 'Link to a hosted resume file (PDF or otherwise). Used if GitHub URL is not set.', 'portfolio-theme' ),
+		)
+	);
+}
+add_action( 'customize_register', 'portfolio_theme_customize_register' );
+
+/**
  * Minimal fallback menu so navigation still works before a menu is assigned
  * in Appearance > Menus.
  */
@@ -96,12 +175,42 @@ function portfolio_theme_enqueue_assets() {
 	}
 
 	if ( isset( $manifest['src/js/main.js']['file'] ) ) {
+		// Classic script, not a module. type="module" scripts enforce CORS
+		// on cross-origin loads (classic scripts don't) — since every asset
+		// URL here is built from the site's configured siteurl, a visitor
+		// reaching the site via any other hostname/IP than that exact
+		// origin (e.g. localhost vs. a Tailscale IP/MagicDNS name) would
+		// have this script silently blocked by the browser, which is
+		// exactly what caused the "completely black" homepage. Three.js is
+		// therefore statically imported inside workspace/index.js rather
+		// than dynamically code-split — a real, disclosed bundle-size
+		// trade-off in exchange for actually working regardless of which
+		// hostname the site is reached through.
 		wp_enqueue_script(
 			'portfolio-theme-main',
 			get_template_directory_uri() . '/dist/' . $manifest['src/js/main.js']['file'],
 			array(),
 			$theme_version,
 			true
+		);
+
+		// The workspace scene's clickable objects navigate to real WordPress
+		// destinations — resolved here in PHP (by post type archive / page
+		// template / Customizer setting) rather than hardcoded in JS, so
+		// renaming a page's slug or setting a GitHub/resume URL never
+		// requires touching scene code.
+		$github_url = get_theme_mod( 'portfolio_github_url', '' );
+		$resume_url = get_theme_mod( 'portfolio_resume_url', '' );
+		wp_localize_script(
+			'portfolio-theme-main',
+			'portfolioWorkspaceLinks',
+			array(
+				'projects' => get_post_type_archive_link( 'project' ) ?: '',
+				'about'    => portfolio_theme_get_page_url_by_template( 'template-about.php' ),
+				'contact'  => portfolio_theme_get_page_url_by_template( 'template-contact.php' ),
+				'github'   => $github_url,
+				'resume'   => $resume_url,
+			)
 		);
 
 		// If main.js's own CSS import was bundled under the JS entry instead

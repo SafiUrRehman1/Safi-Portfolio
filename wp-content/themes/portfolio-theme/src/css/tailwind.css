@@ -49,6 +49,8 @@
 	--font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 	--font-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
+	--spacing-hero: 12rem;
+	--spacing-hero-sm: 5rem;
 	--spacing-section: 9rem;
 	--spacing-section-sm: 5rem;
 
@@ -288,13 +290,94 @@
 		}
 	}
 
-	/* Hero (placeholder — replaced by the constellation later) */
-	.hero {
-		padding-block: var(--spacing-section);
-		border-bottom: 1px solid var(--color-border);
+	/* The homepage (header + hero scene + footer) must fit one viewport with
+	   no scrolling — WordPress adds `home` to <body> for this template, so
+	   header/footer keep their natural height and the scene flexes to fill
+	   whatever's left, rather than the scene assuming a fixed 100vh and the
+	   header/footer pushing the page taller than the viewport. */
+	body.home {
+		min-height: 100dvh;
+		display: flex;
+		flex-direction: column;
 	}
 
-	.hero__eyebrow {
+	body.home #page-transition-container {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		min-height: 0;
+	}
+
+	/* Clicking a workspace-scene nav object fades this (the whole page,
+	   header+main+footer) out to reveal the body background beneath —
+	   which is already the same dark color, so no separate overlay element
+	   is needed — while the camera dollies toward the clicked object, then
+	   src/js/workspace/interaction.js navigates. prefers-reduced-motion
+	   already forces near-instant transitions globally (see base layer),
+	   and the JS skips this animation entirely in that case anyway. */
+	#page-transition-container {
+		transition: opacity 0.55s ease;
+	}
+
+	#page-transition-container.is-leaving {
+		opacity: 0;
+		pointer-events: none;
+	}
+
+	body.home #main-content {
+		flex: 1;
+		display: flex;
+		min-height: 0;
+	}
+
+	body.home .site-footer {
+		flex-shrink: 0;
+	}
+
+	/* Homepage signature scene — a static, art-directed 3D "digital
+	   workspace" (src/js/workspace). The canvas starts `hidden`; the plain
+	   heading/role text beneath it is the real content and stays visible
+	   unless JS confirms the scene mounted successfully. No interaction
+	   yet — this phase is geometry, lighting, and composition only. */
+	.hero-scene {
+		position: relative;
+		width: 100%;
+		height: 100vh;
+		overflow: hidden;
+		background: var(--color-bg);
+	}
+
+	body.home .hero-scene {
+		height: auto;
+		flex: 1;
+		min-height: 0;
+	}
+
+	.hero-scene__canvas {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		display: block;
+	}
+
+	.hero-scene__canvas[hidden] {
+		display: none;
+	}
+
+	.hero-scene__fallback {
+		position: relative;
+		z-index: 1;
+		height: 100%;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		text-align: center;
+		padding-inline: 1.5rem;
+	}
+
+	.hero-scene__eyebrow {
 		font-family: var(--font-mono);
 		color: var(--color-accent);
 		font-size: 0.875rem;
@@ -303,15 +386,30 @@
 		margin-bottom: 1rem;
 	}
 
-	.hero__title {
-		font-size: clamp(2.5rem, 6vw, 4.5rem);
-		margin-bottom: 1rem;
+	.hero-scene__title {
+		font-size: clamp(2.25rem, 6vw, 4rem);
 	}
 
-	.hero__subtitle {
+	.hero-scene__fallback-nav {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 1.25rem;
+		margin-top: 1.75rem;
+	}
+
+	.hero-scene__fallback-nav a {
+		font-family: var(--font-mono);
+		font-size: 0.8125rem;
+		letter-spacing: 0.04em;
 		color: var(--color-text-secondary);
-		font-size: clamp(1rem, 2vw, 1.25rem);
-		max-width: 40ch;
+		text-decoration: underline;
+		text-underline-offset: 0.25em;
+	}
+
+	.hero-scene__fallback-nav a:hover,
+	.hero-scene__fallback-nav a:focus-visible {
+		color: var(--color-accent);
 	}
 
 	/* Project grid + card */

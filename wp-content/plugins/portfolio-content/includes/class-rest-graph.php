@@ -77,6 +77,7 @@ class Portfolio_REST_Graph {
 				'type'       => 'project',
 				'title'      => get_the_title( $project ),
 				'slug'       => $project->post_name,
+				'url'        => get_permalink( $project ),
 				'featured'   => (bool) get_post_meta( $project->ID, 'featured', true ),
 				'thumbnail'  => $thumbnail ? $thumbnail : null,
 				'categories' => $categories,

@@ -16,10 +16,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 get_header();
 get_template_part( 'template-parts/back-to-workspace' );
 
-$email       = get_theme_mod( 'portfolio_email', '' );
-if ( ! $email ) {
-	$email = get_option( 'admin_email' );
-}
 $github_url    = get_theme_mod( 'portfolio_github_url', '' );
 $linkedin_url  = get_theme_mod( 'portfolio_linkedin_url', '' );
 $resume_url    = get_theme_mod( 'portfolio_resume_url', '' );
@@ -111,13 +107,6 @@ while ( have_posts() ) :
 							</p>
 						</div>
 					</form>
-
-					<?php if ( $email ) : ?>
-						<p class="contact-form__alt" data-reveal data-reveal-delay="2">
-							<?php esc_html_e( 'Prefer email directly?', 'portfolio-theme' ); ?>
-							<a href="<?php echo esc_url( 'mailto:' . antispambot( $email ) ); ?>"><?php echo esc_html( $email ); ?></a>
-						</p>
-					<?php endif; ?>
 				</div>
 			</section>
 

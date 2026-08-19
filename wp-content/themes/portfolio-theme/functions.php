@@ -26,6 +26,82 @@ function portfolio_theme_setup() {
 add_action( 'after_setup_theme', 'portfolio_theme_setup' );
 
 /**
+ * Contact form handler — native WordPress (admin-post.php), no form-builder
+ * plugin. Validates, rejects obvious bots via a honeypot, emails the site
+ * owner, and — since this dev machine has no outbound mail transport
+ * configured (wp_mail() silently fails here) — also appends every valid
+ * submission to a private log file outside the web root, so nothing is
+ * ever lost even when mail delivery isn't working. Real hosting with a
+ * working mail transport will start actually delivering email with zero
+ * code changes; the log stays as a permanent safety net either way.
+ */
+function portfolio_theme_contact_log_path() {
+	return dirname( ABSPATH ) . '/portfolio-contact-submissions.log';
+}
+
+function portfolio_theme_handle_contact_form() {
+	$redirect_base = wp_get_referer() ?: home_url( '/contact/' );
+
+	if ( ! isset( $_POST['portfolio_contact_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['portfolio_contact_nonce'] ) ), 'portfolio_contact_form' ) ) {
+		wp_safe_redirect( add_query_arg( 'contact', 'error', $redirect_base ) );
+		exit;
+	}
+
+	// Honeypot: a field real visitors never see or fill. Bots that fill
+	// every field trip it — redirect as if it succeeded so they don't learn
+	// it was rejected, without ever emailing or logging anything.
+	if ( ! empty( $_POST['portfolio_contact_website'] ) ) {
+		wp_safe_redirect( add_query_arg( 'contact', 'sent', $redirect_base ) );
+		exit;
+	}
+
+	$name     = sanitize_text_field( wp_unslash( $_POST['name'] ?? '' ) );
+	$company  = sanitize_text_field( wp_unslash( $_POST['company'] ?? '' ) );
+	$email    = sanitize_email( wp_unslash( $_POST['email'] ?? '' ) );
+	$phone    = sanitize_text_field( wp_unslash( $_POST['phone'] ?? '' ) );
+	$interest = sanitize_text_field( wp_unslash( $_POST['interest'] ?? '' ) );
+	$message  = sanitize_textarea_field( wp_unslash( $_POST['message'] ?? '' ) );
+
+	if ( ! $name || ! is_email( $email ) || ! $message ) {
+		wp_safe_redirect( add_query_arg( 'contact', 'error', $redirect_base ) );
+		exit;
+	}
+
+	$lines = array( "Name: $name" );
+	if ( $company ) {
+		$lines[] = "Company: $company";
+	}
+	$lines[] = "Email: $email";
+	if ( $phone ) {
+		$lines[] = "Phone: $phone";
+	}
+	if ( $interest ) {
+		$lines[] = "Interested in: $interest";
+	}
+	$lines[] = '';
+	$lines[] = 'Message:';
+	$lines[] = $message;
+	$body     = implode( "\n", $lines );
+
+	$to      = get_theme_mod( 'portfolio_email', '' ) ?: get_option( 'admin_email' );
+	$subject = sprintf( '[%s] New message from %s', get_bloginfo( 'name' ), $name );
+	wp_mail( $to, $subject, $body, array( 'Reply-To: ' . $name . ' <' . $email . '>' ) );
+
+	$log_entry = sprintf(
+		"[%s]\n%s\n%s\n\n",
+		gmdate( 'Y-m-d H:i:s' ) . ' UTC',
+		$body,
+		str_repeat( '-', 40 )
+	);
+	$logged = @file_put_contents( portfolio_theme_contact_log_path(), $log_entry, FILE_APPEND | LOCK_EX );
+
+	wp_safe_redirect( add_query_arg( 'contact', false !== $logged ? 'sent' : 'error', $redirect_base ) );
+	exit;
+}
+add_action( 'admin_post_portfolio_contact', 'portfolio_theme_handle_contact_form' );
+add_action( 'admin_post_nopriv_portfolio_contact', 'portfolio_theme_handle_contact_form' );
+
+/**
  * WordPress only marks a menu item "current" on an exact URL match, so the
  * Projects nav link doesn't light up while viewing an individual project
  * (a different URL under the same section). Extends that highlighting to

@@ -1281,50 +1281,143 @@
 		max-width: 52ch;
 	}
 
-	.contact-email {
+	/* Contact form — the page's primary action. Single column on mobile,
+	   paired fields (Name/Company, Email/Phone) on desktop; everything else
+	   stacks full-width. Plain, semantic <input>/<select>/<textarea> styled
+	   to match the site's restrained dark-bordered vocabulary (the same
+	   treatment as buttons/tags elsewhere), not a novel form-widget style. */
+	.contact-form {
 		display: flex;
-		flex-wrap: wrap;
-		align-items: baseline;
-		gap: 1.25rem;
+		flex-direction: column;
+		gap: 1.5rem;
+		max-width: 42rem;
 	}
 
-	.contact-email__address {
-		font-family: var(--font-display);
-		font-size: clamp(1.5rem, 5vw, 2.75rem);
-		font-weight: 600;
-		letter-spacing: -0.01em;
-		text-decoration: none;
-		word-break: break-word;
+	.contact-form__row {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 1.5rem;
+	}
+
+	@media (min-width: 640px) {
+		.contact-form__row {
+			grid-template-columns: 1fr 1fr;
+		}
+	}
+
+	.contact-form__field {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.contact-form__label {
+		font-family: var(--font-mono);
+		font-size: 0.75rem;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--color-text-secondary);
+	}
+
+	.contact-form__input {
+		width: 100%;
+		background: transparent;
+		border: 1px solid var(--color-border);
+		border-radius: 0.375rem;
+		padding: 0.75rem 1rem;
+		color: var(--color-text);
+		font-family: var(--font-body);
+		font-size: 1rem;
+		transition: border-color 0.2s ease;
+	}
+
+	.contact-form__input:focus-visible {
+		outline: none;
+		border-color: var(--color-accent);
+	}
+
+	.contact-form__select {
+		appearance: none;
+		/* The other inputs are transparent over the page background, but a
+		   <select>'s native options popup is rendered by the OS/browser, not
+		   this stylesheet — "transparent" there falls back to a light
+		   system default, which combined with this site's light text color
+		   made the option list unreadable. An explicit dark background
+		   (here and on the <option>s below) fixes that everywhere. */
+		background-color: var(--color-bg-elevated);
+		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238b8f98' stroke-width='1.5' fill='none' fill-rule='evenodd'/%3E%3C/svg%3E");
+		background-repeat: no-repeat;
+		background-position: right 1rem center;
+		padding-right: 2.5rem;
+	}
+
+	.contact-form__select option {
+		background-color: var(--color-bg-elevated);
+		color: var(--color-text);
+	}
+
+	.contact-form__textarea {
+		resize: vertical;
+		min-height: 8rem;
+		font-family: var(--font-body);
+	}
+
+	.contact-form__submit-row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 1rem;
+	}
+
+	.contact-form__hint {
+		font-family: var(--font-mono);
+		font-size: 0.75rem;
+		color: var(--color-text-secondary);
+	}
+
+	.contact-form__alt {
+		margin-top: 2rem;
+		font-size: 0.9375rem;
+		color: var(--color-text-secondary);
+	}
+
+	.contact-form__alt a {
+		color: var(--color-text);
+		text-decoration: underline;
+		text-underline-offset: 0.2em;
+		margin-left: 0.375rem;
 	}
 
 	@media (hover: hover) {
-		.contact-email__address:hover {
+		.contact-form__alt a:hover {
 			color: var(--color-accent);
 		}
 	}
 
-	.contact-email__copy {
-		font-family: var(--font-mono);
-		font-size: 0.8125rem;
-		letter-spacing: 0.04em;
-		color: var(--color-text-secondary);
-		background: transparent;
-		border: 1px solid var(--color-border);
-		border-radius: 999px;
-		padding: 0.5rem 1rem;
-		cursor: pointer;
-		transition: border-color 0.2s ease, color 0.2s ease;
+	.contact-form__notice {
+		border-left: 2px solid var(--color-border);
+		padding: 0.75rem 1.25rem;
+		margin-bottom: 1.5rem;
+		font-size: 0.9375rem;
+		max-width: 42rem;
 	}
 
-	.contact-email__copy:hover,
-	.contact-email__copy:focus-visible {
-		border-color: var(--color-accent-dim);
-		color: var(--color-text);
-	}
-
-	.contact-email__copy.is-copied {
+	.contact-form__notice--success {
 		border-color: var(--color-accent);
-		color: var(--color-accent);
+	}
+
+	.contact-form__notice--error {
+		color: var(--color-text-secondary);
+	}
+
+	/* Honeypot — invisible to real visitors and never in the visual tab
+	   flow, but present in the DOM for bots that blindly fill every field. */
+	.contact-form__honeypot {
+		position: absolute;
+		left: -9999px;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
 	}
 
 	.contact-links__list {

@@ -7,7 +7,6 @@ import { initWorkspaceScene } from './workspace/index.js';
 import { initProjectsShowcase } from './projects-showcase/index.js';
 import { initLinkTransitions } from './page-transition.js';
 import { initScrollReveal } from './reveal.js';
-import { initContactCopyEmail } from './contact.js';
 
 function initNav() {
 	const toggle = document.getElementById( 'nav-toggle' );
@@ -67,11 +66,6 @@ function boot() {
 		console.warn( 'Scroll reveal: failed to initialize, content stays visible.', error );
 	}
 
-	try {
-		initContactCopyEmail();
-	} catch ( error ) {
-		console.warn( 'Contact copy-email: failed to initialize.', error );
-	}
 }
 
 if ( document.readyState === 'loading' ) {

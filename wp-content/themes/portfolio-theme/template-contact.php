@@ -19,6 +19,7 @@ get_template_part( 'template-parts/back-to-workspace' );
 $github_url    = get_theme_mod( 'portfolio_github_url', '' );
 $linkedin_url  = get_theme_mod( 'portfolio_linkedin_url', '' );
 $resume_url    = get_theme_mod( 'portfolio_resume_url', '' );
+$public_email  = get_theme_mod( 'portfolio_public_email', 'hello@safii.dev' );
 
 $contact_result = isset( $_GET['contact'] ) ? sanitize_text_field( wp_unslash( $_GET['contact'] ) ) : '';
 
@@ -110,12 +111,15 @@ while ( have_posts() ) :
 				</div>
 			</section>
 
-			<?php if ( $github_url || $linkedin_url || $resume_url ) : ?>
+			<?php if ( $public_email || $github_url || $linkedin_url || $resume_url ) : ?>
 				<!-- 3. Social / professional links -->
 				<section class="section section--editorial contact-links">
 					<div class="container">
 						<p class="eyebrow" data-reveal><?php esc_html_e( 'Elsewhere', 'portfolio-theme' ); ?></p>
 						<ul class="contact-links__list" data-reveal data-reveal-delay="1">
+							<?php if ( $public_email ) : ?>
+								<li><a href="<?php echo esc_url( 'mailto:' . $public_email ); ?>"><?php echo esc_html( $public_email ); ?></a></li>
+							<?php endif; ?>
 							<?php if ( $github_url ) : ?>
 								<li><a href="<?php echo esc_url( $github_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'GitHub', 'portfolio-theme' ); ?></a></li>
 							<?php endif; ?>

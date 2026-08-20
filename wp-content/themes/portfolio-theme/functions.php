@@ -45,15 +45,17 @@ add_action( 'after_setup_theme', 'portfolio_theme_setup' );
 /**
  * Contact form handler — native WordPress (admin-post.php), no form-builder
  * plugin. Validates, rejects obvious bots via a honeypot, emails the site
- * owner, and — since this dev machine has no outbound mail transport
- * configured (wp_mail() silently fails here) — also appends every valid
- * submission to a private log file outside the web root, so nothing is
- * ever lost even when mail delivery isn't working. Real hosting with a
- * working mail transport will start actually delivering email with zero
- * code changes; the log stays as a permanent safety net either way.
+ * owner, and always additionally appends every valid submission to a
+ * private log file, so nothing is ever lost even on a submission where
+ * mail delivery fails for some reason. The log lives inside wp-content/ —
+ * not "outside the web root" in the filesystem sense, but nginx already
+ * denies any *.log request at the server level (see the site's nginx
+ * config), and this location is guaranteed writable by the PHP process
+ * (unlike, say, the parent of ABSPATH, which is root-owned on a standard
+ * /var/www layout and silently failed here before).
  */
 function portfolio_theme_contact_log_path() {
-	return dirname( ABSPATH ) . '/portfolio-contact-submissions.log';
+	return WP_CONTENT_DIR . '/portfolio-contact-submissions.log';
 }
 
 function portfolio_theme_handle_contact_form() {
@@ -102,7 +104,7 @@ function portfolio_theme_handle_contact_form() {
 
 	$to      = get_theme_mod( 'portfolio_email', '' ) ?: get_option( 'admin_email' );
 	$subject = sprintf( '[%s] New message from %s', get_bloginfo( 'name' ), $name );
-	wp_mail( $to, $subject, $body, array( 'Reply-To: ' . $name . ' <' . $email . '>' ) );
+	$mailed  = wp_mail( $to, $subject, $body, array( 'Reply-To: ' . $name . ' <' . $email . '>' ) );
 
 	$log_entry = sprintf(
 		"[%s]\n%s\n%s\n\n",
@@ -112,11 +114,43 @@ function portfolio_theme_handle_contact_form() {
 	);
 	$logged = @file_put_contents( portfolio_theme_contact_log_path(), $log_entry, FILE_APPEND | LOCK_EX );
 
-	wp_safe_redirect( add_query_arg( 'contact', false !== $logged ? 'sent' : 'error', $redirect_base ) );
+	// The visitor sees "sent" if the message was captured by either means —
+	// email delivery failing shouldn't tell them it was lost when the log
+	// still has it, and vice versa.
+	$captured = $mailed || false !== $logged;
+	wp_safe_redirect( add_query_arg( 'contact', $captured ? 'sent' : 'error', $redirect_base ) );
 	exit;
 }
 add_action( 'admin_post_portfolio_contact', 'portfolio_theme_handle_contact_form' );
 add_action( 'admin_post_nopriv_portfolio_contact', 'portfolio_theme_handle_contact_form' );
+
+/**
+ * wp_mail()'s default transport is the server's local mail command, which
+ * on a cloud VM either doesn't exist (nothing to send with) or gets
+ * spam-filtered by the receiving mailbox even when it does — cloud
+ * provider IP ranges have a poor sending reputation for direct-to-MX mail.
+ * Relaying through an authenticated SMTP account (here, a Gmail App
+ * Password) sends as real, already-trusted mail instead. Credentials live
+ * only in wp-config.php constants on the server, never in this file or in
+ * git; this stays a silent no-op wherever those constants aren't defined
+ * (e.g. the dev machine), so wp_mail() there keeps its existing behavior.
+ */
+function portfolio_theme_configure_smtp( $phpmailer ) {
+	if ( ! defined( 'PORTFOLIO_SMTP_HOST' ) || ! defined( 'PORTFOLIO_SMTP_USERNAME' ) || ! defined( 'PORTFOLIO_SMTP_PASSWORD' ) ) {
+		return;
+	}
+
+	$phpmailer->isSMTP();
+	$phpmailer->Host       = PORTFOLIO_SMTP_HOST;
+	$phpmailer->Port       = defined( 'PORTFOLIO_SMTP_PORT' ) ? PORTFOLIO_SMTP_PORT : 587;
+	$phpmailer->SMTPAuth   = true;
+	$phpmailer->Username   = PORTFOLIO_SMTP_USERNAME;
+	$phpmailer->Password   = PORTFOLIO_SMTP_PASSWORD;
+	$phpmailer->SMTPSecure = 'tls';
+	$phpmailer->From       = PORTFOLIO_SMTP_USERNAME;
+	$phpmailer->FromName   = get_bloginfo( 'name' );
+}
+add_action( 'phpmailer_init', 'portfolio_theme_configure_smtp' );
 
 /**
  * WordPress only marks a menu item "current" on an exact URL match, so the
@@ -263,9 +297,28 @@ function portfolio_theme_customize_register( $wp_customize ) {
 		'portfolio_email',
 		array(
 			'section'     => 'portfolio_theme_links',
-			'label'       => __( 'Contact email', 'portfolio-theme' ),
+			'label'       => __( 'Contact form recipient', 'portfolio-theme' ),
 			'type'        => 'email',
-			'description' => __( 'Shown on the Contact page. Falls back to the site admin email if left blank.', 'portfolio-theme' ),
+			'description' => __( 'Private — where contact form submissions are sent. Never shown on the site. Falls back to the site admin email if left blank.', 'portfolio-theme' ),
+		)
+	);
+
+	$wp_customize->add_setting(
+		'portfolio_public_email',
+		array(
+			'type'              => 'theme_mod',
+			'default'           => 'hello@safii.dev',
+			'sanitize_callback' => 'sanitize_email',
+			'transport'         => 'refresh',
+		)
+	);
+	$wp_customize->add_control(
+		'portfolio_public_email',
+		array(
+			'section'     => 'portfolio_theme_links',
+			'label'       => __( 'Public email', 'portfolio-theme' ),
+			'type'        => 'email',
+			'description' => __( 'Shown on the Contact page. A separate, public-facing address — not the private recipient above. Leave blank to hide it.', 'portfolio-theme' ),
 		)
 	);
 

@@ -76,15 +76,23 @@ class ProjectShowcaseController {
 			pin: this.viewport,
 			start: 'top top',
 			end: () => '+=' + window.innerHeight * TRANSITION_VH * ( this.total - 1 ),
-			// Lower scrub = less catch-up delay between the actual scroll
-			// position and the visual — 0.35, then 0.15, both still read as
-			// laggy; this tracks input almost immediately while keeping just
-			// enough smoothing to avoid a raw, stuttery 1:1 jump.
-			scrub: 0.08,
+			// Any numeric scrub value smooths the visual toward the scroll
+			// position over that many seconds — which, on a fast scroll or
+			// trackpad flick, shows up as the crossfade catching up in a
+			// visible burst rather than tracking continuously. 0.35 and then
+			// 0.08 both still read as laggy for exactly that reason. `true`
+			// ties the crossfade to the actual scroll position every frame
+			// with zero smoothing lag — it can never fall behind, so there's
+			// nothing to catch up from.
+			scrub: true,
 			snap: {
 				snapTo: 1 / ( this.total - 1 ),
-				duration: { min: 0.15, max: 0.35 },
-				delay: 0.05,
+				duration: { min: 0.2, max: 0.35 },
+				// Long enough that a trackpad's native momentum scroll
+				// finishes decelerating before the snap engages, so the two
+				// don't fight each other (that fight was its own source of
+				// visible stutter independent of the scrub value above).
+				delay: 0.1,
 				ease: 'power1.inOut',
 			},
 			onUpdate: ( self ) => this.updateForProgress( self.progress * ( this.total - 1 ) ),

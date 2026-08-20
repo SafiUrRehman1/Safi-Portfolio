@@ -77,14 +77,14 @@ class ProjectShowcaseController {
 			start: 'top top',
 			end: () => '+=' + window.innerHeight * TRANSITION_VH * ( this.total - 1 ),
 			// Lower scrub = less catch-up delay between the actual scroll
-			// position and the visual — the previous 0.35 read as laggy;
-			// this stays smoothed (not a raw 1:1 jump) but tracks input
-			// much more directly.
-			scrub: 0.15,
+			// position and the visual — 0.35, then 0.15, both still read as
+			// laggy; this tracks input almost immediately while keeping just
+			// enough smoothing to avoid a raw, stuttery 1:1 jump.
+			scrub: 0.08,
 			snap: {
 				snapTo: 1 / ( this.total - 1 ),
-				duration: { min: 0.25, max: 0.6 },
-				delay: 0.15,
+				duration: { min: 0.15, max: 0.35 },
+				delay: 0.05,
 				ease: 'power1.inOut',
 			},
 			onUpdate: ( self ) => this.updateForProgress( self.progress * ( this.total - 1 ) ),

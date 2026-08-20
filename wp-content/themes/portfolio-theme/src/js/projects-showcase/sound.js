@@ -1,13 +1,12 @@
 /**
- * A restrained "reveal" cue for the Projects showcase — synthesized via Web
- * Audio, not an audio file. The transition it pairs with is no longer a
- * lateral swipe but a fade/scale/drift reveal, so the sound follows suit:
- * a brief filtered-noise "air" transient (the outgoing scene giving way)
- * immediately layered with a soft, slightly descending sine tone (the
- * incoming scene settling into place) — read as one coordinated arrival
- * rather than a whoosh sliding past. Deliberately self-contained here (not
- * shared with the homepage workspace's src/js/workspace/sound.js) so this
- * change stays scoped to the Projects page only.
+ * A restrained "swish" cue for the Projects showcase — synthesized via Web
+ * Audio, not an audio file. Two quick, softly filtered air strokes in
+ * close succession (not one sustained whoosh, and nothing tonal) — reads
+ * as fabric or paper moving past rather than a UI beep, and stays quiet
+ * enough to never feel like it's interrupting the reveal it accompanies.
+ * Deliberately self-contained here (not shared with the homepage
+ * workspace's src/js/workspace/sound.js) so this change stays scoped to
+ * the Projects page only.
  */
 
 let audioCtx = null;
@@ -35,16 +34,51 @@ function getNoiseBuffer( ctx ) {
 		return noiseBuffer;
 	}
 
-	const duration = 0.2;
+	const duration = 0.5;
 	const length = Math.floor( ctx.sampleRate * duration );
 	const buffer = ctx.createBuffer( 1, length, ctx.sampleRate );
 	const data = buffer.getChannelData( 0 );
+
+	// Brown-ish noise (each sample leans on the last) rather than raw white
+	// noise — white noise's flat spectrum reads as a harsh hiss even once
+	// bandpassed; this softens it toward something closer to moving air.
+	let last = 0;
 	for ( let i = 0; i < length; i++ ) {
-		data[ i ] = Math.random() * 2 - 1;
+		const white = Math.random() * 2 - 1;
+		last = ( last + white * 0.15 ) / 1.15;
+		data[ i ] = last * 3.2;
 	}
 
 	noiseBuffer = buffer;
 	return buffer;
+}
+
+/** One filtered-noise stroke: a short bandpass sweep with a soft
+ * attack/decay envelope. `startAt` / `peakFrequency` let two of these be
+ * layered slightly offset to read as "swish, swish" rather than one
+ * sound. */
+function playStroke( ctx, startAt, peakFrequency, gainPeak ) {
+	const duration = 0.26;
+	const source = ctx.createBufferSource();
+	source.buffer = getNoiseBuffer( ctx );
+
+	const filter = ctx.createBiquadFilter();
+	filter.type = 'bandpass';
+	filter.Q.setValueAtTime( 0.7, startAt );
+	filter.frequency.setValueAtTime( peakFrequency, startAt );
+	filter.frequency.exponentialRampToValueAtTime( peakFrequency * 0.4, startAt + duration );
+
+	const gainNode = ctx.createGain();
+	gainNode.gain.setValueAtTime( 0.0001, startAt );
+	gainNode.gain.exponentialRampToValueAtTime( gainPeak, startAt + 0.035 );
+	gainNode.gain.exponentialRampToValueAtTime( 0.0001, startAt + duration );
+
+	source.connect( filter );
+	filter.connect( gainNode );
+	gainNode.connect( ctx.destination );
+
+	source.start( startAt );
+	source.stop( startAt + duration + 0.02 );
 }
 
 /** Played once per project-to-project reveal (at the moment the timeline
@@ -58,53 +92,8 @@ export function playRevealSound() {
 
 	const now = ctx.currentTime;
 
-	// Air transient: short, high, fading fast — reads as the outgoing scene
-	// giving way rather than a sustained whoosh.
-	const noiseDuration = 0.14;
-	const noiseSource = ctx.createBufferSource();
-	noiseSource.buffer = getNoiseBuffer( ctx );
-
-	const noiseFilter = ctx.createBiquadFilter();
-	noiseFilter.type = 'bandpass';
-	noiseFilter.Q.setValueAtTime( 0.8, now );
-	noiseFilter.frequency.setValueAtTime( 2000, now );
-	noiseFilter.frequency.exponentialRampToValueAtTime( 900, now + noiseDuration );
-
-	const noiseGain = ctx.createGain();
-	noiseGain.gain.setValueAtTime( 0.0001, now );
-	noiseGain.gain.exponentialRampToValueAtTime( 0.05, now + 0.012 );
-	noiseGain.gain.exponentialRampToValueAtTime( 0.0001, now + noiseDuration );
-
-	noiseSource.connect( noiseFilter );
-	noiseFilter.connect( noiseGain );
-	noiseGain.connect( ctx.destination );
-
-	noiseSource.start( now );
-	noiseSource.stop( now + noiseDuration + 0.02 );
-
-	// Settle tone: soft sine, gently descending — reads as the incoming
-	// scene arriving and coming to rest, timed to land under the visual's
-	// own settle rather than the initial motion.
-	const toneStart = now + 0.03;
-	const toneDuration = 0.32;
-	const oscillator = ctx.createOscillator();
-	oscillator.type = 'sine';
-	oscillator.frequency.setValueAtTime( 420, toneStart );
-	oscillator.frequency.exponentialRampToValueAtTime( 250, toneStart + toneDuration );
-
-	const toneFilter = ctx.createBiquadFilter();
-	toneFilter.type = 'lowpass';
-	toneFilter.frequency.setValueAtTime( 1400, toneStart );
-
-	const toneGain = ctx.createGain();
-	toneGain.gain.setValueAtTime( 0.0001, toneStart );
-	toneGain.gain.exponentialRampToValueAtTime( 0.08, toneStart + 0.05 );
-	toneGain.gain.exponentialRampToValueAtTime( 0.0001, toneStart + toneDuration );
-
-	oscillator.connect( toneFilter );
-	toneFilter.connect( toneGain );
-	toneGain.connect( ctx.destination );
-
-	oscillator.start( toneStart );
-	oscillator.stop( toneStart + toneDuration + 0.03 );
+	// Two strokes, the second slightly quieter and lower — a coordinated
+	// "swish, swish" rather than a doubled-up echo of the same sound.
+	playStroke( ctx, now, 2100, 0.055 );
+	playStroke( ctx, now + 0.1, 1500, 0.04 );
 }

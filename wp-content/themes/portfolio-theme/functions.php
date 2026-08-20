@@ -194,13 +194,91 @@ function portfolio_theme_head_extras() {
 		return;
 	}
 
+	$canonical_url = is_front_page() ? home_url( '/' ) : get_permalink();
+
 	echo '<meta name="description" content="' . esc_attr( $description ) . '" />' . "\n";
+	echo '<link rel="canonical" href="' . esc_url( $canonical_url ) . '" />' . "\n";
 	echo '<meta property="og:type" content="website" />' . "\n";
 	echo '<meta property="og:title" content="' . esc_attr( wp_get_document_title() ) . '" />' . "\n";
 	echo '<meta property="og:description" content="' . esc_attr( $description ) . '" />' . "\n";
-	echo '<meta property="og:url" content="' . esc_url( is_front_page() ? home_url( '/' ) : get_permalink() ) . '" />' . "\n";
+	echo '<meta property="og:url" content="' . esc_url( $canonical_url ) . '" />' . "\n";
+	// No og:image exists yet (no project screenshots uploaded), so
+	// "summary" rather than "summary_large_image" — Twitter/X falls back
+	// to the og:title/og:description above automatically.
+	echo '<meta name="twitter:card" content="summary" />' . "\n";
 }
 add_action( 'wp_head', 'portfolio_theme_head_extras', 1 );
+
+/**
+ * WordPress core's own rel_canonical() only fires on is_singular() pages,
+ * so the front page — rendered by front-page.php without a backing Page
+ * object — never got one. portfolio_theme_head_extras() above now emits
+ * a canonical tag on every page from the same is_front_page()-aware
+ * logic already used for og:url, so core's version is redundant (and
+ * would otherwise print a second, duplicate canonical tag on pages where
+ * it does fire).
+ */
+remove_action( 'wp_head', 'rel_canonical' );
+
+/**
+ * Minimal JSON-LD structured data — describes the site owner (for search
+ * engines building a knowledge panel from a name search) and, on project
+ * pages, the project itself. Built entirely from data that already
+ * exists (theme mods, post content/meta) — nothing invented, and it
+ * degrades to fewer fields rather than guessing when something isn't set.
+ */
+function portfolio_theme_structured_data() {
+	$github_url   = get_theme_mod( 'portfolio_github_url', '' );
+	$linkedin_url = get_theme_mod( 'portfolio_linkedin_url', '' );
+
+	$same_as = array_filter( array( $github_url, $linkedin_url ) );
+
+	$person = array(
+		'@context' => 'https://schema.org',
+		'@type'    => 'Person',
+		'name'     => get_bloginfo( 'name' ),
+		'url'      => home_url( '/' ),
+		'jobTitle' => __( 'Software Developer', 'portfolio-theme' ),
+	);
+	if ( $same_as ) {
+		$person['sameAs'] = array_values( $same_as );
+	}
+
+	echo '<script type="application/ld+json">' . wp_json_encode( $person ) . '</script>' . "\n";
+
+	if ( ! is_singular( 'project' ) ) {
+		return;
+	}
+
+	$project_id  = get_the_ID();
+	$github_repo = get_post_meta( $project_id, 'github_url', true );
+	$demo_url    = get_post_meta( $project_id, 'live_demo_url', true );
+
+	$creative_work = array(
+		'@context'    => 'https://schema.org',
+		'@type'       => 'CreativeWork',
+		'name'        => get_the_title( $project_id ),
+		'url'         => get_permalink( $project_id ),
+		'description' => has_excerpt( $project_id ) ? get_the_excerpt( $project_id ) : wp_trim_words( wp_strip_all_tags( get_the_content( null, false, $project_id ) ), 30 ),
+		'author'      => array(
+			'@type' => 'Person',
+			'name'  => get_bloginfo( 'name' ),
+		),
+	);
+	if ( $github_repo ) {
+		$creative_work['codeRepository'] = $github_repo;
+	}
+	if ( $demo_url ) {
+		$creative_work['sameAs'] = $demo_url;
+	}
+	$thumbnail = get_the_post_thumbnail_url( $project_id, 'medium' );
+	if ( $thumbnail ) {
+		$creative_work['image'] = $thumbnail;
+	}
+
+	echo '<script type="application/ld+json">' . wp_json_encode( $creative_work ) . '</script>' . "\n";
+}
+add_action( 'wp_head', 'portfolio_theme_structured_data', 2 );
 
 /**
  * The Projects archive is presented as one continuous scroll-driven

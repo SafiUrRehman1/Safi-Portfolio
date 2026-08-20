@@ -1,35 +1,41 @@
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { playSwipeSound } from './sound.js';
+import { playRevealSound } from './sound.js';
 
 // Scroll distance per project-to-project transition, as a fraction of one
-// viewport height. Short enough that a normal scroll gesture covers it —
-// this directly replaces the earlier "too much scroll distance" problem —
-// while still giving ScrollTrigger enough room to compute smooth,
-// continuous, momentum-respecting progress rather than a hair-trigger jump.
+// viewport height. Short enough that a normal scroll gesture covers it,
+// while still giving ScrollTrigger enough room to resolve a clean snap
+// point between projects.
 const TRANSITION_VH = 0.75;
 
-function clamp01( value ) {
-	return Math.min( Math.max( value, 0 ), 1 );
-}
-
-/** Remap `value` from [inMin, inMax] to [0, 1], clamped. Used to offset the
- * meta (title/tags) transition slightly from the visual's own progress, so
- * they read as coordinated-but-distinct stages rather than one flat fade. */
-function mapRange( value, inMin, inMax ) {
-	return clamp01( ( value - inMin ) / ( inMax - inMin ) );
-}
+// How long one project-to-project reveal takes, and the easing that shapes
+// it. This is the entire reason transitions read as smooth now: the motion
+// comes from this fixed, pre-defined curve playing out on GSAP's own
+// ticker, not from continuously re-deriving opacity/scale straight off
+// live scroll position. Scroll input — mouse wheel notches, trackpad
+// deltas, momentum — is never smooth or evenly paced, so anything that
+// maps visual state 1:1 to it inherits that raw unevenness no matter how
+// well-tuned the scrub/snap numbers are. Treating scroll only as a
+// *trigger* ("we've crossed into the next project") and letting a real
+// timeline own the motion from there removes that ceiling entirely.
+const REVEAL_DURATION = 0.68;
+const REVEAL_EASE = 'power3.out';
+const EXIT_EASE = 'power2.in';
 
 /**
- * Desktop-only, scroll-driven scene transitions for the Projects archive.
- * Native scroll is never intercepted or blocked — GSAP ScrollTrigger pins
- * the viewport for a short distance and scrubs the crossfade/parallax
- * directly off real scroll position, then (via ScrollTrigger's own `snap`)
- * eases the scroll position to the nearest project once the user stops
- * scrolling. Every scene is real, always-rendered markup; this only
- * animates opacity/transform (never display:none), and toggles `inert` on
- * whichever scene isn't currently dominant so only one is reachable by
- * keyboard/AT at a time while the showcase is engaged.
+ * Desktop-only, scroll-triggered scene transitions for the Projects
+ * archive. Native scroll is never intercepted or blocked — ScrollTrigger
+ * pins the viewport for a short distance per project and reports scroll
+ * progress, but that progress is only used to detect *which* project
+ * should be dominant right now, quantized to a whole index. Crossing into
+ * a new index plays one self-contained reveal timeline (fade + scale +
+ * drift) with its own fixed duration and easing — scrolling further while
+ * it's still playing simply retargets it, GSAP smoothly picking up from
+ * wherever the in-flight animation currently is rather than restarting or
+ * queuing. Every scene is real, always-rendered markup; this only animates
+ * opacity/transform (never display:none), and toggles `inert` on whichever
+ * scene isn't currently dominant so only one is reachable by keyboard/AT
+ * at a time while the showcase is engaged.
  */
 class ProjectShowcaseController {
 	constructor( showcase, viewport, scenes ) {
@@ -45,7 +51,7 @@ class ProjectShowcaseController {
 
 		this.handleKeydown = this.handleKeydown.bind( this );
 		this.handleScrollEnd = this.handleScrollEnd.bind( this );
-		this.updateForProgress = this.updateForProgress.bind( this );
+		this.handleProgress = this.handleProgress.bind( this );
 	}
 
 	init() {
@@ -56,18 +62,14 @@ class ProjectShowcaseController {
 
 		gsap.registerPlugin( ScrollTrigger );
 
-		// Resolved once, not on every scroll tick — updateForProgress() runs on
-		// essentially every frame while scrubbing, so re-querying the DOM for
-		// each scene's visual/meta elements there was the main source of the
-		// scroll feeling laggy: N scenes × (1 querySelector + 1
-		// querySelectorAll) on every single update, every frame.
+		// Resolved once, not on every scroll tick.
 		this.sceneRefs = this.scenes.map( ( scene ) => ( {
 			scene,
 			visual: scene.querySelector( '.project-scene__visual' ),
 			metaItems: scene.querySelectorAll( '.project-scene__meta > *' ),
 		} ) );
 
-		gsap.set( this.scenes, { autoAlpha: 0 } );
+		gsap.set( this.scenes, { autoAlpha: 0, scale: 1, y: 0 } );
 		gsap.set( this.scenes[ 0 ], { autoAlpha: 1 } );
 		this.setDominant( 0 );
 
@@ -76,26 +78,15 @@ class ProjectShowcaseController {
 			pin: this.viewport,
 			start: 'top top',
 			end: () => '+=' + window.innerHeight * TRANSITION_VH * ( this.total - 1 ),
-			// Any numeric scrub value smooths the visual toward the scroll
-			// position over that many seconds — which, on a fast scroll or
-			// trackpad flick, shows up as the crossfade catching up in a
-			// visible burst rather than tracking continuously. 0.35 and then
-			// 0.08 both still read as laggy for exactly that reason. `true`
-			// ties the crossfade to the actual scroll position every frame
-			// with zero smoothing lag — it can never fall behind, so there's
-			// nothing to catch up from.
-			scrub: true,
+			// No scrub: progress is read as a plain, unsmoothed value purely to
+			// decide which whole index should be dominant — see handleProgress().
 			snap: {
 				snapTo: 1 / ( this.total - 1 ),
 				duration: { min: 0.2, max: 0.35 },
-				// Long enough that a trackpad's native momentum scroll
-				// finishes decelerating before the snap engages, so the two
-				// don't fight each other (that fight was its own source of
-				// visible stutter independent of the scrub value above).
 				delay: 0.1,
 				ease: 'power1.inOut',
 			},
-			onUpdate: ( self ) => this.updateForProgress( self.progress * ( this.total - 1 ) ),
+			onUpdate: ( self ) => this.handleProgress( self.progress ),
 		} );
 
 		document.addEventListener( 'keydown', this.handleKeydown );
@@ -107,48 +98,60 @@ class ProjectShowcaseController {
 		this.showcase.classList.add( 'project-showcase--interactive' );
 	}
 
-	updateForProgress( progress ) {
-		const lower = Math.min( Math.floor( progress ), this.total - 1 );
-		const upper = Math.min( lower + 1, this.total - 1 );
-		const localT = upper === lower ? 0 : progress - lower;
+	/** Scroll progress only ever decides *which* project should be dominant
+	 * — rounded to the nearest whole index, never read as a fractional
+	 * blend. Crossing into a new index is the sole trigger for revealTo(). */
+	handleProgress( progress ) {
+		const target = Math.round( progress * ( this.total - 1 ) );
+		if ( target !== this.currentDominant ) {
+			this.revealTo( target );
+		}
+	}
 
-		this.sceneRefs.forEach( ( sceneRef, i ) => {
-			const { scene, visual, metaItems } = sceneRef;
-			if ( i === lower ) {
-				// Outgoing: subtle scale down, slight opacity reduction, subtle
-				// translation — never disappears abruptly, tracks scroll directly.
-				gsap.set( scene, { autoAlpha: 1 - localT } );
-				if ( visual ) {
-					gsap.set( visual, { scale: 1 - localT * 0.05, xPercent: -localT * 5 } );
-				}
-				if ( metaItems.length ) {
-					const metaOut = mapRange( localT, 0, 0.6 );
-					gsap.set( metaItems, { autoAlpha: 1 - metaOut, y: -metaOut * 16 } );
-				}
-			} else if ( i === upper && upper !== lower ) {
-				// Incoming: scale/position correction, opacity increases, meta
-				// arrives slightly after the visual for coordinated-but-staged timing.
-				gsap.set( scene, { autoAlpha: localT } );
-				if ( visual ) {
-					gsap.set( visual, { scale: 0.96 + localT * 0.04, xPercent: ( 1 - localT ) * 5 } );
-				}
-				if ( metaItems.length ) {
-					const metaIn = mapRange( localT, 0.35, 1 );
-					gsap.set( metaItems, { autoAlpha: metaIn, y: ( 1 - metaIn ) * 16 } );
-				}
-			} else if ( ! sceneRef.isFar ) {
-				// Only write this once per entry into the "far" state, not on
-				// every scroll tick while it's already sitting there hidden.
-				gsap.set( scene, { autoAlpha: 0 } );
-			}
+	/** Plays one reveal: the outgoing scene drifts/fades away, the incoming
+	 * one drifts/scales/fades into place, on a fixed timeline independent
+	 * of further scroll input. Called again mid-flight (fast scrolling past
+	 * multiple projects) simply retargets — killing/recreating the tween on
+	 * a given element makes GSAP pick up motion from its current rendered
+	 * state rather than snapping or restarting. */
+	revealTo( index ) {
+		const from = this.sceneRefs[ this.currentDominant ];
+		const to = this.sceneRefs[ index ];
+		const direction = index > this.currentDominant ? 1 : -1;
 
-			sceneRef.isFar = i !== lower && i !== upper;
-		} );
+		playRevealSound();
+		this.setDominant( index );
 
-		const dominant = localT > 0.5 ? upper : lower;
-		if ( dominant !== this.currentDominant ) {
-			playSwipeSound();
-			this.setDominant( dominant );
+		const tl = gsap.timeline();
+
+		tl.to( from.scene, { autoAlpha: 0, duration: REVEAL_DURATION * 0.7, ease: EXIT_EASE }, 0 );
+		if ( from.visual ) {
+			tl.to( from.visual, { scale: 0.94, xPercent: direction * -4, duration: REVEAL_DURATION * 0.7, ease: EXIT_EASE }, 0 );
+		}
+		if ( from.metaItems.length ) {
+			tl.to( from.metaItems, { autoAlpha: 0, y: -14, duration: REVEAL_DURATION * 0.5, ease: EXIT_EASE }, 0 );
+		}
+
+		// Incoming scene starts from a slightly scaled/offset/invisible state
+		// each time (rather than assuming it's still there from last time),
+		// so a fast double-skip always looks correct.
+		gsap.set( to.scene, { autoAlpha: 0 } );
+		if ( to.visual ) {
+			gsap.set( to.visual, { scale: 1.05, xPercent: direction * 4 } );
+		}
+		if ( to.metaItems.length ) {
+			gsap.set( to.metaItems, { autoAlpha: 0, y: 18 } );
+		}
+
+		// Starts slightly after the outgoing scene begins leaving, for a
+		// coordinated "make way, then arrive" feel rather than a flat cross.
+		const incomingStart = REVEAL_DURATION * 0.12;
+		tl.to( to.scene, { autoAlpha: 1, duration: REVEAL_DURATION, ease: REVEAL_EASE }, incomingStart );
+		if ( to.visual ) {
+			tl.to( to.visual, { scale: 1, xPercent: 0, duration: REVEAL_DURATION, ease: REVEAL_EASE }, incomingStart );
+		}
+		if ( to.metaItems.length ) {
+			tl.to( to.metaItems, { autoAlpha: 1, y: 0, duration: REVEAL_DURATION * 0.8, ease: REVEAL_EASE, stagger: 0.04 }, incomingStart + REVEAL_DURATION * 0.15 );
 		}
 	}
 
@@ -175,7 +178,8 @@ class ProjectShowcaseController {
 
 	/** Keyboard equivalent of a scroll gesture: moves the actual scroll
 	 * position by one transition-distance and lets the same ScrollTrigger
-	 * pipeline (scrub + snap) handle the rest — no separate animation path. */
+	 * pipeline (progress + snap) handle the rest — no separate animation
+	 * path. */
 	handleKeydown( event ) {
 		if ( ! this.scrollTrigger || ! this.scrollTrigger.isActive ) {
 			return;

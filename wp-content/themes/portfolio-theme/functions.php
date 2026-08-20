@@ -304,25 +304,6 @@ function portfolio_theme_customize_register( $wp_customize ) {
 	);
 
 	$wp_customize->add_setting(
-		'portfolio_public_email',
-		array(
-			'type'              => 'theme_mod',
-			'default'           => 'hello@safii.dev',
-			'sanitize_callback' => 'sanitize_email',
-			'transport'         => 'refresh',
-		)
-	);
-	$wp_customize->add_control(
-		'portfolio_public_email',
-		array(
-			'section'     => 'portfolio_theme_links',
-			'label'       => __( 'Public email', 'portfolio-theme' ),
-			'type'        => 'email',
-			'description' => __( 'Shown on the Contact page. A separate, public-facing address — not the private recipient above. Leave blank to hide it.', 'portfolio-theme' ),
-		)
-	);
-
-	$wp_customize->add_setting(
 		'portfolio_linkedin_url',
 		array(
 			'type'              => 'theme_mod',

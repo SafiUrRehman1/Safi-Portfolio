@@ -209,6 +209,15 @@ function portfolio_theme_head_extras() {
 }
 add_action( 'wp_head', 'portfolio_theme_head_extras', 1 );
 
+/** Google Search Console ownership verification — a static, one-time
+ * proof of domain ownership, unrelated to the page-dependent logic in
+ * portfolio_theme_head_extras() above, so it gets its own unconditional
+ * hook rather than risking being skipped by that function's early return. */
+function portfolio_theme_search_console_verification() {
+	echo '<meta name="google-site-verification" content="HAeznTTac_jNQzNYCWyMc4TcDRZAQYubbpmhCo7urkw" />' . "\n";
+}
+add_action( 'wp_head', 'portfolio_theme_search_console_verification', 1 );
+
 /**
  * WordPress core's own rel_canonical() only fires on is_singular() pages,
  * so the front page — rendered by front-page.php without a backing Page

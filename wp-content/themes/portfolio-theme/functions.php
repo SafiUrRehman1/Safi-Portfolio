@@ -205,10 +205,24 @@ function portfolio_theme_head_extras() {
 	echo '<meta property="og:title" content="' . esc_attr( wp_get_document_title() ) . '" />' . "\n";
 	echo '<meta property="og:description" content="' . esc_attr( $description ) . '" />' . "\n";
 	echo '<meta property="og:url" content="' . esc_url( $canonical_url ) . '" />' . "\n";
-	// No og:image exists yet (no project screenshots uploaded), so
-	// "summary" rather than "summary_large_image" — Twitter/X falls back
-	// to the og:title/og:description above automatically.
-	echo '<meta name="twitter:card" content="summary" />' . "\n";
+
+	// Project pages use their own screenshot; everywhere else falls back to
+	// a site-wide social image (Customizer-editable, defaults to a
+	// homepage screenshot). "summary_large_image" only when one actually
+	// exists — Twitter/X falls back to the og:title/og:description above
+	// on plain "summary" when there's no image to show.
+	if ( is_singular( 'project' ) && has_post_thumbnail() ) {
+		$image_url = get_the_post_thumbnail_url( get_the_ID(), 'large' );
+	} else {
+		$image_url = get_theme_mod( 'portfolio_og_image', '' );
+	}
+
+	if ( $image_url ) {
+		echo '<meta property="og:image" content="' . esc_url( $image_url ) . '" />' . "\n";
+		echo '<meta name="twitter:card" content="summary_large_image" />' . "\n";
+	} else {
+		echo '<meta name="twitter:card" content="summary" />' . "\n";
+	}
 }
 add_action( 'wp_head', 'portfolio_theme_head_extras', 1 );
 
@@ -465,6 +479,27 @@ function portfolio_theme_customize_register( $wp_customize ) {
 			'label'       => __( 'Resume URL', 'portfolio-theme' ),
 			'type'        => 'url',
 			'description' => __( 'Link to a hosted resume file (PDF or otherwise). Used if GitHub URL is not set.', 'portfolio-theme' ),
+		)
+	);
+
+	$wp_customize->add_setting(
+		'portfolio_og_image',
+		array(
+			'type'              => 'theme_mod',
+			'default'           => '',
+			'sanitize_callback' => 'esc_url_raw',
+			'transport'         => 'refresh',
+		)
+	);
+	$wp_customize->add_control(
+		new WP_Customize_Image_Control(
+			$wp_customize,
+			'portfolio_og_image',
+			array(
+				'section'     => 'portfolio_theme_links',
+				'label'       => __( 'Social share image', 'portfolio-theme' ),
+				'description' => __( 'Shown when a page is shared on social media/messaging apps. Used on every page except single projects, which use their own screenshot instead.', 'portfolio-theme' ),
+			)
 		)
 	);
 }

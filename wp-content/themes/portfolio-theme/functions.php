@@ -129,9 +129,12 @@ add_action( 'admin_post_nopriv_portfolio_contact', 'portfolio_theme_handle_conta
  * on a cloud VM either doesn't exist (nothing to send with) or gets
  * spam-filtered by the receiving mailbox even when it does — cloud
  * provider IP ranges have a poor sending reputation for direct-to-MX mail.
- * Relaying through an authenticated SMTP account (here, a Gmail App
- * Password) sends as real, already-trusted mail instead. Credentials live
- * only in wp-config.php constants on the server, never in this file or in
+ * Relaying through an authenticated SMTP provider (Resend, sending as a
+ * verified safii.dev domain) sends as real, already-trusted mail instead.
+ * Unlike Gmail's relay, the provider doesn't tie the From address to the
+ * SMTP auth identity, so From can genuinely be an @safii.dev address
+ * rather than the recipient's own personal inbox. Credentials live only
+ * in wp-config.php constants on the server, never in this file or in
  * git; this stays a silent no-op wherever those constants aren't defined
  * (e.g. the dev machine), so wp_mail() there keeps its existing behavior.
  */
@@ -147,13 +150,7 @@ function portfolio_theme_configure_smtp( $phpmailer ) {
 	$phpmailer->Username   = PORTFOLIO_SMTP_USERNAME;
 	$phpmailer->Password   = PORTFOLIO_SMTP_PASSWORD;
 	$phpmailer->SMTPSecure = 'tls';
-	// The address itself has to stay the authenticated Gmail account —
-	// Gmail's SMTP relay rejects a From that doesn't match the
-	// authenticated account or a verified "Send As" alias, and Cloudflare
-	// Email Routing (receive-only forwarding) can't satisfy Gmail's
-	// alias-verification requirement, which needs real outbound SMTP for
-	// that address. The display name is the only lever available here.
-	$phpmailer->From       = PORTFOLIO_SMTP_USERNAME;
+	$phpmailer->From       = defined( 'PORTFOLIO_MAIL_FROM' ) ? PORTFOLIO_MAIL_FROM : PORTFOLIO_SMTP_USERNAME;
 	$phpmailer->FromName   = "Safi's Portfolio";
 }
 add_action( 'phpmailer_init', 'portfolio_theme_configure_smtp' );

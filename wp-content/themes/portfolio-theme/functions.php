@@ -147,8 +147,14 @@ function portfolio_theme_configure_smtp( $phpmailer ) {
 	$phpmailer->Username   = PORTFOLIO_SMTP_USERNAME;
 	$phpmailer->Password   = PORTFOLIO_SMTP_PASSWORD;
 	$phpmailer->SMTPSecure = 'tls';
+	// The address itself has to stay the authenticated Gmail account —
+	// Gmail's SMTP relay rejects a From that doesn't match the
+	// authenticated account or a verified "Send As" alias, and Cloudflare
+	// Email Routing (receive-only forwarding) can't satisfy Gmail's
+	// alias-verification requirement, which needs real outbound SMTP for
+	// that address. The display name is the only lever available here.
 	$phpmailer->From       = PORTFOLIO_SMTP_USERNAME;
-	$phpmailer->FromName   = get_bloginfo( 'name' );
+	$phpmailer->FromName   = "Safi's Portfolio";
 }
 add_action( 'phpmailer_init', 'portfolio_theme_configure_smtp' );
 

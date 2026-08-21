@@ -53,6 +53,7 @@ $placeholder_hue = 175 + ( crc32( get_the_title( $project ) ) % 45 );
 <article class="project-scene" data-project-scene data-index="<?php echo esc_attr( $index ); ?>" tabindex="-1">
 	<div class="project-scene__inner">
 		<div class="project-scene__visual">
+			<?php get_template_part( 'template-parts/browser-mockup-bar', null, array( 'url' => $demo_url ) ); ?>
 			<?php if ( $image_html ) : ?>
 				<?php echo $image_html; ?>
 			<?php else : ?>

@@ -19,6 +19,7 @@ while ( have_posts() ) :
 
 			<?php if ( has_post_thumbnail() ) : ?>
 				<div class="single-project__featured-image">
+					<?php get_template_part( 'template-parts/browser-mockup-bar', null, array( 'url' => get_post_meta( get_the_ID(), 'live_demo_url', true ) ) ); ?>
 					<?php the_post_thumbnail( 'large', array( 'loading' => 'eager' ) ); ?>
 				</div>
 			<?php endif; ?>
